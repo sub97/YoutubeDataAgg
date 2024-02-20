@@ -3,7 +3,7 @@ import concurrent.futures
 import os
 
 def getKey():
-    with open('C:\\Users\\'+os.getenv("USERNAME")+'\\Desktop\\key.txt', 'r') as file:
+    with open('C:\\Users\\'+os.getenv("USERNAME")+'\\Desktop\\key.txt', 'r') as file: #key stored locally
         API_KEY = file.read()
         file.close()
     return API_KEY
@@ -44,7 +44,7 @@ def getChannelDetails(Handle):
         Handle = Handle[Handle.find('.com/')+len('.com/'):]
 
     if Handle.endswith("/"): 
-        Handle = Handle[:-1]
+        Handle = Handle[:-1] #just getting the channel handle only
 
     print('retriving for '+Handle)
 
@@ -80,7 +80,7 @@ def getUploadsFromChannel(response):
     for item in response["items"]:
         videoIDList.append(getVideoID(item))
 
-    getVideoComments(getVideoID(response["items"][0])) #testing only for one video
+    getVideoComments(getVideoID(response["items"][0])) #testing only for one video to get comment. else I will exhaust 10,000 google api quota
     
     getVideoDetails(",".join(videoIDList))
 
@@ -133,7 +133,7 @@ def getVideoComments(videoID):
 
 def main(channelIDs):
 
-    if channelIDs.find(','):
+    if channelIDs.find(','): #batch processing
         channel = channelIDs.split(',')
         if (len(channel)>500): #only 10000 requests are available per day. hence, we have narrowed down number of channels can only be 500, as we cannot predict how many comments will be present for each video
             print("Can only process 2000 channels in a day")
