@@ -1,6 +1,8 @@
 from googleapiclient.discovery import build
 import concurrent.futures
 import os
+import argparse
+import sys
 
 def getKey():
     with open('C:\\Users\\'+os.getenv("USERNAME")+'\\Desktop\\key.txt', 'r') as file: #key stored locally
@@ -63,9 +65,9 @@ def getChannelDetails(Handle):
     
     getUploadsFromChannel(response)
 
-def getUploadsFromChannel(response):
+def getUploadsFromChannel(uploads):
     
-    uploads_playlist_id = response["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
+    uploads_playlist_id = uploads["items"][0]["contentDetails"]["relatedPlaylists"]["uploads"]
     parts = ["contentDetails", "id", "snippet","status"]
 
     request = youtube.playlistItems().list(
@@ -111,7 +113,7 @@ def getVideoComments(videoID):
                 textFormat='plainText'
             )
             response = request.execute()
-            print(response)
+            print("comment:-:"+str(response))
 
             for item in response["items"]:   
                 commentText = item['snippet']['topLevelComment']['snippet']['textOriginal']
@@ -132,6 +134,7 @@ def getVideoComments(videoID):
     return COMMENTS
 
 def main(channelIDs):
+    print(arguments)
 
     if channelIDs.find(','): #batch processing
         channel = channelIDs.split(',')
@@ -147,5 +150,15 @@ def processMultipleChannels(channel):
     getChannelDetails(channel)
 
 
-if __name__ == "__main__":
-    main('https://www.youtube.com/@ThinkMediaTV,https://www.youtube.com/@AutoFocus,https://www.youtube.com/@cut,https://www.youtube.com/@LofiGirl')
+#if __name__ == "__main__":
+#    main('https://www.youtube.com/@ThinkMediaTV,https://www.youtube.com/@AutoFocus,https://www.youtube.com/@cut,https://www.youtube.com/@LofiGirl')
+
+parser = argparse.ArgumentParser(description="Retrieves info from YouTube Channels")
+parser.add_argument("-c", "--channels", type=str, help="Enter Channel Id(s) to fetch data from")
+
+arguments = parser.parse_args()
+
+if len(arguments.channels) < 1:
+    raise SystemExit("No ChannelId passed. Use '-h' flag for assistance.")
+
+main(arguments.channels)
