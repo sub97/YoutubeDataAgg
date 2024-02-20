@@ -1,6 +1,6 @@
 from googleapiclient.discovery import build
+import concurrent.futures
 import pyperclip
-import json
 import os
 
 def getKey():
@@ -40,6 +40,15 @@ def getVideoCommentCount(videoInfo):
 
 
 def getChannelDetails(Handle):
+
+    if Handle.find('.com'):
+        Handle = Handle[Handle.find('.com/')+len('.com/'):]
+
+    if Handle.endswith("/"): 
+        Handle = Handle[:-1]
+
+    print('retriving for '+Handle)
+
     parts = ["brandingSettings", "contentDetails", "contentOwnerDetails", "id","localizations","snippet","statistics","status","topicDetails"]
 
     request = youtube.channels().list(
@@ -72,9 +81,9 @@ def getUploadsFromChannel(response):
     for item in response["items"]:
         videoIDList.append(getVideoID(item))
 
-    getVideoComments(getVideoID(response["items"][0]))
+    getVideoComments(getVideoID(response["items"][0])) #testing only for one video
     
-    #getVideoDetails(",".join(videoIDList))
+    getVideoDetails(",".join(videoIDList))
 
 
 def getVideoDetails(videoIDs):
@@ -85,6 +94,8 @@ def getVideoDetails(videoIDs):
         part=",".join(parts),
     )
     response = request.execute()
+
+    return response
 
 def getVideoComments(videoID):
     MAX_RESULTS = 100
@@ -104,8 +115,11 @@ def getVideoComments(videoID):
             pyperclip.copy(str(response))
             print(response)
 
-            for item in response["items"]:            
-                COMMENTS.append(item['snippet']['topLevelComment']['snippet']['textOriginal'])
+            for item in response["items"]:   
+                commentText = item['snippet']['topLevelComment']['snippet']['textOriginal']
+                who = item['snippet']['topLevelComment']['snippet']['authorDisplayName']
+                array = [commentText,who]
+                COMMENTS.append(array)
             
             NEXT_PAGE_TOKEN = response.get('nextPageToken')
             if not NEXT_PAGE_TOKEN:
@@ -114,6 +128,26 @@ def getVideoComments(videoID):
             print(f"An exception occurred: {str(e)}")
             break
 
-    print('\n'.join(COMMENTS))
+    for comment in COMMENTS:
+        print(comment[0]+" by:-: "+comment[1])
 
-getChannelDetails("@ThinkMediaTV")
+    return COMMENTS
+
+def main(channelIDs):
+
+    if channelIDs.find(','):
+        channel = channelIDs.split(',')
+        if (len(channel)>500): #only 10000 requests are available per day. hence, we have narrowed down number of channels can only be 500, as we cannot predict how many comments will be present for each video
+            print("Can only process 2000 channels in a day")
+            return
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            executor.map(processMultipleChannels, channel)
+    else:
+        getChannelDetails(channelIDs)
+
+def processMultipleChannels(channel):
+    getChannelDetails(channel)
+
+
+if __name__ == "__main__":
+    main('https://www.youtube.com/@ThinkMediaTV,https://www.youtube.com/@AutoFocus,https://www.youtube.com/@cut,https://www.youtube.com/@LofiGirl')
