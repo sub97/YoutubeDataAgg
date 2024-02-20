@@ -1,6 +1,5 @@
 from googleapiclient.discovery import build
 import concurrent.futures
-import pyperclip
 import os
 
 def getKey():
@@ -112,7 +111,6 @@ def getVideoComments(videoID):
                 textFormat='plainText'
             )
             response = request.execute()
-            pyperclip.copy(str(response))
             print(response)
 
             for item in response["items"]:   
